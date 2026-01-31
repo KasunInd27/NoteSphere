@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import useAuthStore from '../store/useAuthStore';
+import useAuthStore from '../../store/useAuthStore';
 
 const ProtectedRoute = () => {
     const { isAuthenticated, isLoading, checkAuth } = useAuthStore();
@@ -10,7 +10,7 @@ const ProtectedRoute = () => {
     }, [checkAuth]);
 
     if (isLoading) {
-        return <div className="flex h-screen items-center justify-center">Loading...</div>; // Replace with a skeleton later
+        return <div className="flex h-screen items-center justify-center">Loading...</div>;
     }
 
     return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;

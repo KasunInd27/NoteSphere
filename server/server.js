@@ -6,6 +6,8 @@ import mongoose from 'mongoose';
 import { createServer } from 'http';
 import { Server } from 'socket.io'; // will use later
 import authRoutes from './routes/authRoutes.js';
+import pageRoutes from './routes/pageRoutes.js';
+import blockRoutes from './routes/blockRoutes.js';
 
 dotenv.config();
 
@@ -30,6 +32,8 @@ app.use(cookieParser());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/pages', pageRoutes);
+app.use('/api/blocks', blockRoutes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');
