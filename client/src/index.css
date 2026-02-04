@@ -74,3 +74,30 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+    /* Hide sidebar, topbar, and other UI elements */
+    aside, nav, .debug-ui, button, .no-print {
+        display: none !important;
+    }
+
+    /* Reset main content area */
+    main {
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        height: auto !important;
+        display: block !important;
+    }
+    
+    /* Ensure all text is black */
+    body {
+        color: black !important;
+        background: white !important;
+    }
+
+    /* Better typography for print */
+    .prose {
+        max-width: none !important;
+    }
+}

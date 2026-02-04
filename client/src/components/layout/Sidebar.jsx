@@ -57,9 +57,12 @@ const Sidebar = () => {
                 </div>
             </div>
 
-            {/* Quick Actions */}
+            {/* Quick Actions (Search, etc) */}
             <div className="px-3 mb-3">
-                <div className="group flex items-center gap-x-2 px-2 py-1.5 rounded-md hover:bg-neutral-200/50 dark:hover:bg-neutral-800 text-sm font-medium text-muted-foreground cursor-pointer">
+                <div
+                    onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+                    className="group flex items-center gap-x-2 px-2 py-1.5 rounded-md hover:bg-neutral-200/50 dark:hover:bg-neutral-800 text-sm font-medium text-muted-foreground cursor-pointer"
+                >
                     <span className="flex items-center justify-center p-0.5 rounded bg-muted border ml-1 text-xs">
                         ⌘K
                     </span>

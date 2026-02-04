@@ -20,6 +20,7 @@
         "@tiptap/starter-kit": "^2.2.4",
         "axios": "^1.6.8",
         "clsx": "^2.1.0",
+        "cmdk": "^1.1.1",
         "date-fns": "^3.6.0",
         "jwt-decode": "^4.0.0",
         "lucide-react": "^0.363.0",

@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import useSocketStore from '@/store/useSocketStore';
+import SearchCommand from '@/components/common/SearchCommand';
 
 const Layout = () => {
     const { connect, disconnect } = useSocketStore();
@@ -14,6 +15,7 @@ const Layout = () => {
 
     return (
         <div className="h-full flex dark:bg-[#191919] bg-white">
+            <SearchCommand />
             <Sidebar />
             <main className="flex-1 h-full overflow-hidden flex flex-col relative min-w-0">
                 <Topbar />
