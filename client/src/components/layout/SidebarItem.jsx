@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronRight, File, Plus, Trash, MoreHorizontal } from "lucide-react";
+import { ChevronRight, File, Plus, Trash, MoreHorizontal, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate, useParams } from "react-router-dom";
 import usePageStore from "@/store/usePageStore";
@@ -7,10 +7,12 @@ import usePageStore from "@/store/usePageStore";
 const SidebarItem = ({ page, level = 0, onExpand, expanded }) => {
     const navigate = useNavigate();
     const { id: activePageId } = useParams();
-    const { createPage, deletePage } = usePageStore();
+    const { createPage, deletePage, toggleFavorite, favoritePages } = usePageStore();
+
 
     const isExpanded = expanded?.[page._id];
     const isActive = activePageId === page._id;
+    const isFavorite = favoritePages.some(p => p._id === page._id);
 
     const handleExpand = (e) => {
         e.stopPropagation();
@@ -36,6 +38,11 @@ const SidebarItem = ({ page, level = 0, onExpand, expanded }) => {
             await deletePage(page._id);
             if (isActive) navigate("/");
         }
+    };
+
+    const onToggleFavorite = async (e) => {
+        e.stopPropagation();
+        await toggleFavorite(page._id);
     };
 
     return (
@@ -72,7 +79,22 @@ const SidebarItem = ({ page, level = 0, onExpand, expanded }) => {
                 </span>
             </div>
 
+
             <div className="ml-auto flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-x-0.5">
+                <div
+                    role="button"
+                    onClick={onToggleFavorite}
+                    className={cn(
+                        "h-5 w-5 flex items-center justify-center rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600",
+                        isFavorite && "opacity-100"
+                    )}
+                    title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                >
+                    <Star className={cn(
+                        "h-3 w-3",
+                        isFavorite ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground"
+                    )} />
+                </div>
                 <div
                     role="button"
                     onClick={onDelete}

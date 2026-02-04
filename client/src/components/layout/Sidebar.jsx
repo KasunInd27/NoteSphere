@@ -1,10 +1,11 @@
 import React, { useEffect } from "react";
-import { Plus, Settings } from "lucide-react";
+import { Plus, Settings, ChevronRight } from "lucide-react";
 import usePageStore from "@/store/usePageStore";
 import SidebarItem from "./SidebarItem";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "@/store/useAuthStore";
 import AvatarUpload from "@/components/common/AvatarUpload";
+import { cn } from "@/lib/utils";
 
 // Recursive render helper
 const renderTree = (pages, parentId = null, level = 0, expanded, toggleExpand) => {
@@ -20,12 +21,27 @@ const renderTree = (pages, parentId = null, level = 0, expanded, toggleExpand) =
 
 const Sidebar = () => {
     const navigate = useNavigate();
-    const { pages, fetchPages, createPage, expanded, toggleExpand, isLoading } = usePageStore();
+    const {
+        pages,
+        fetchPages,
+        createPage,
+        expanded,
+        toggleExpand,
+        isLoading,
+        favoritePages,
+        recentPages,
+        fetchFavorites,
+        fetchRecentPages
+    } = usePageStore();
     const { user } = useAuthStore();
+    const [showFavorites, setShowFavorites] = React.useState(true);
+    const [showRecent, setShowRecent] = React.useState(true);
 
     useEffect(() => {
         fetchPages();
-    }, [fetchPages]);
+        fetchFavorites();
+        fetchRecentPages();
+    }, [fetchPages, fetchFavorites, fetchRecentPages]);
 
     const handleCreate = async () => {
         const newPage = await createPage();
@@ -70,14 +86,77 @@ const Sidebar = () => {
                 </div>
             </div>
 
+
             {/* Page Tree */}
             <div className="flex-1 overflow-y-auto px-2 pb-2">
+                {/* Favorites Section */}
+                {favoritePages.length > 0 && (
+                    <div className="mb-4">
+                        <div
+                            onClick={() => setShowFavorites(!showFavorites)}
+                            className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground/50 px-3 py-1 mb-1 cursor-pointer hover:text-muted-foreground/70 transition"
+                        >
+                            <ChevronRight className={cn(
+                                "h-3 w-3 transition-transform",
+                                showFavorites && "rotate-90"
+                            )} />
+                            <span>Favorites</span>
+                        </div>
+                        {showFavorites && (
+                            <div className="space-y-0.5">
+                                {favoritePages.map(page => (
+                                    <SidebarItem
+                                        key={page._id}
+                                        page={page}
+                                        level={0}
+                                        expanded={expanded}
+                                        onExpand={toggleExpand}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Recent Section */}
+                {recentPages.length > 0 && (
+                    <div className="mb-4">
+                        <div
+                            onClick={() => setShowRecent(!showRecent)}
+                            className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground/50 px-3 py-1 mb-1 cursor-pointer hover:text-muted-foreground/70 transition"
+                        >
+                            <ChevronRight className={cn(
+                                "h-3 w-3 transition-transform",
+                                showRecent && "rotate-90"
+                            )} />
+                            <span>Recent</span>
+                        </div>
+                        {showRecent && (
+                            <div className="space-y-0.5">
+                                {recentPages.slice(0, 5).map(page => (
+                                    <SidebarItem
+                                        key={page._id}
+                                        page={page}
+                                        level={0}
+                                        expanded={expanded}
+                                        onExpand={toggleExpand}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 <div className="text-xs font-semibold text-muted-foreground/50 px-3 py-1 mb-1">
                     Private
                 </div>
 
                 {isLoading ? (
-                    <div className="px-4 py-2 text-sm text-muted-foreground">Loading pages...</div>
+                    <div className="space-y-2 px-3">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="h-7 bg-muted/50 rounded animate-pulse" />
+                        ))}
+                    </div>
                 ) : (
                     <div className="space-y-0.5">
                         {renderTree(pages, null, 0, expanded, toggleExpand)}

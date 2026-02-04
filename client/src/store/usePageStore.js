@@ -5,6 +5,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const usePageStore = create((set, get) => ({
     pages: [],
+    favoritePages: [],
+    recentPages: [],
     isLoading: false,
     expanded: {}, // { pageId: boolean }
 
@@ -60,6 +62,53 @@ const usePageStore = create((set, get) => ({
                 [pageId]: forceState !== undefined ? forceState : !state.expanded[pageId]
             }
         }));
+    },
+
+    // Favorites
+    fetchFavorites: async () => {
+        try {
+            const response = await axios.get(`${API_URL}/api/users/favorites`, { withCredentials: true });
+            set({ favoritePages: response.data });
+        } catch (error) {
+            console.error('Failed to fetch favorites', error);
+        }
+    },
+
+    toggleFavorite: async (pageId) => {
+        try {
+            const response = await axios.post(`${API_URL}/api/users/favorites/${pageId}`, {}, { withCredentials: true });
+            // Optimistically update
+            if (response.data.isFavorite) {
+                const page = get().pages.find(p => p._id === pageId);
+                if (page) {
+                    set(state => ({ favoritePages: [...state.favoritePages, page] }));
+                }
+            } else {
+                set(state => ({ favoritePages: state.favoritePages.filter(p => p._id !== pageId) }));
+            }
+        } catch (error) {
+            console.error('Failed to toggle favorite', error);
+        }
+    },
+
+    // Recent pages
+    fetchRecentPages: async () => {
+        try {
+            const response = await axios.get(`${API_URL}/api/users/recent`, { withCredentials: true });
+            set({ recentPages: response.data });
+        } catch (error) {
+            console.error('Failed to fetch recent pages', error);
+        }
+    },
+
+    trackPageVisit: async (pageId) => {
+        try {
+            await axios.post(`${API_URL}/api/users/recent/${pageId}`, {}, { withCredentials: true });
+            // Refresh recents
+            get().fetchRecentPages();
+        } catch (error) {
+            console.error('Failed to track page visit', error);
+        }
     }
 
 }));

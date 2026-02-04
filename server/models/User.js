@@ -19,6 +19,20 @@ const userSchema = new mongoose.Schema({
         url: { type: String },
         key: { type: String }
     },
+    favorites: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Page'
+    }],
+    recentPages: [{
+        pageId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Page'
+        },
+        lastOpenedAt: {
+            type: Date,
+            default: Date.now
+        }
+    }]
 }, {
     timestamps: true,
 });

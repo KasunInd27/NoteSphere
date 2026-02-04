@@ -10,6 +10,7 @@ import pageRoutes from './routes/pageRoutes.js';
 import blockRoutes from './routes/blockRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import snapshotRoutes from './routes/snapshotRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use(cookieParser());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/pages', pageRoutes);
 app.use('/api/blocks', blockRoutes);
 app.use('/api/uploads', uploadRoutes);
