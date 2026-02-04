@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import axios from 'axios';
-import { v4 as uuidv4 } from 'uuid'; // We might need this or just use optimistic IDs
+import useSocketStore from './useSocketStore'; // Import for socket emitting
+
 // Wait, mongo gives IDs. For optimistic, we can use temp IDs but it's tricky.
 // Better to simple wait for server or use random strings and replace. 
 // Let's use simple array for now.
@@ -48,7 +49,12 @@ const useBlockStore = create((set, get) => ({
         };
 
         set({ blocks: updatedBlocks, isSaving: true });
-        get().debouncedSaveBlock(id, updatedBlocks[index]); // Pass full object to be safe
+
+        // Emit socket update
+        const { emitUpdateBlock } = useSocketStore.getState();
+        emitUpdateBlock(updatedBlocks[index].pageId, id, updatedBlocks[index].content, updatedBlocks[index].type, updatedBlocks[index].props);
+
+        get().debouncedSaveBlock(id, updatedBlocks[index]);
     },
 
     debouncedSaveBlock: debounce(async (id, blockData) => {
@@ -64,6 +70,23 @@ const useBlockStore = create((set, get) => ({
             set({ isSaving: false, error: 'Failed to save changes' });
         }
     }, 1000),
+
+    // Remote update (does NOT trigger save)
+    updateBlockFromSocket: (id, content, props, type) => {
+        const { blocks } = get();
+        const index = blocks.findIndex(b => b._id === id);
+        if (index === -1) return;
+
+        const updatedBlocks = [...blocks];
+        updatedBlocks[index] = {
+            ...updatedBlocks[index],
+            content: content !== undefined ? content : updatedBlocks[index].content,
+            props: props || updatedBlocks[index].props,
+            type: type || updatedBlocks[index].type
+        };
+
+        set({ blocks: updatedBlocks });
+    },
 
     addBlock: async (pageId, previousBlockId, type = 'paragraph') => {
         const { blocks } = get();

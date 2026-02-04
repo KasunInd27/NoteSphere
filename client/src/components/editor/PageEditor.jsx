@@ -7,10 +7,14 @@ import useBlockStore from '@/store/useBlockStore';
 import SortableBlock from './SortableBlock';
 import CoverUpload from '@/components/common/CoverUpload';
 import usePageStore from '@/store/usePageStore';
+import useSocketStore from '@/store/useSocketStore';
+import useAuthStore from '@/store/useAuthStore';
 
 
 const PageEditor = ({ pageId }) => {
-    const { blocks, fetchBlocks, isLoading, reorderBlocks, addBlock } = useBlockStore();
+    const { blocks, fetchBlocks, isLoading, reorderBlocks, addBlock, updateBlockFromSocket } = useBlockStore();
+    const { joinPage, leavePage } = useSocketStore();
+    const { user } = useAuthStore();
     const [activeId, setActiveId] = useState(null); // For drag overlay
     const [focusedBlockId, setFocusedBlockId] = useState(null); // To focus new blocks
 
@@ -24,6 +28,29 @@ const PageEditor = ({ pageId }) => {
     useEffect(() => {
         if (pageId) fetchBlocks(pageId);
     }, [pageId, fetchBlocks]);
+
+    // Socket & Persistence
+    useEffect(() => {
+        if (!pageId || !user) return;
+        joinPage(pageId, user);
+        return () => leavePage(pageId);
+    }, [pageId, user, joinPage, leavePage]);
+
+    // Listen for remote block updates
+    useEffect(() => {
+        const socket = useSocketStore.getState().socket;
+        if (!socket) return;
+
+        const handleBlockUpdate = (data) => {
+            // data: { pageId, blockId, content, type, props, sourceSocketId }
+            if (data.pageId === pageId) {
+                updateBlockFromSocket(data.blockId, data.content, data.props, data.type);
+            }
+        };
+
+        socket.on('block_updated', handleBlockUpdate);
+        return () => socket.off('block_updated', handleBlockUpdate);
+    }, [pageId, updateBlockFromSocket]);
 
     // Handle initial empty state
     useEffect(() => {

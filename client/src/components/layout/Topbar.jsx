@@ -1,11 +1,13 @@
 import React from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import usePageStore from '@/store/usePageStore';
+import useSocketStore from '@/store/useSocketStore';
 import { ModeToggle } from './ModeToggle';
 
 const Topbar = () => {
     const { id } = useParams();
     const { pages } = usePageStore();
+    const { activeUsers } = useSocketStore();
 
     // Find current page title for breadcrumbs (simple version)
     // A real breadcrumb would traverse up the parentId chain, but for now let's just show current title or "Dashboard"
@@ -40,7 +42,26 @@ const Topbar = () => {
                 <div className="h-4 w-[1px] bg-border mx-1" />
 
                 <div className="flex items-center gap-x-2">
-                    {/* Share/Star Buttons can go here */}
+                    {/* Active Users */}
+                    <div className="flex items-center -space-x-2 mr-2">
+                        {Object.values(activeUsers).map((u, i) => (
+                            <div key={i} className="relative group/avatar cursor-default">
+                                {u.avatar?.url ? (
+                                    <img src={u.avatar.url} className="w-6 h-6 rounded-full border-2 border-background object-cover grayscale active:grayscale-0 hover:grayscale-0 transition" title={u.name} alt={u.name} />
+                                ) : (
+                                    <div className="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px] font-bold text-muted-foreground" title={u.name}>
+                                        {u.name?.[0]?.toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                        {Object.keys(activeUsers).length > 3 && (
+                            <div className="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px] text-muted-foreground font-medium z-10">
+                                +{Object.keys(activeUsers).length - 3}
+                            </div>
+                        )}
+                    </div>
+
                     <ModeToggle />
                 </div>
             </div>

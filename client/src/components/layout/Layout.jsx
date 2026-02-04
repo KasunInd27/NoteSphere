@@ -1,9 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import useSocketStore from '@/store/useSocketStore';
 
 const Layout = () => {
+    const { connect, disconnect } = useSocketStore();
+
+    useEffect(() => {
+        connect();
+        return () => disconnect();
+    }, [connect, disconnect]);
+
     return (
         <div className="h-full flex dark:bg-[#191919] bg-white">
             <Sidebar />

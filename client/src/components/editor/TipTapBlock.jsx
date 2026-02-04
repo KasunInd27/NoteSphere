@@ -44,16 +44,21 @@ const TipTapBlock = ({ block, autoFocus }) => {
         }
     });
 
-    // Handle type changes (if block type changes from dropdown)
+    // Handle type changes or specific block logic
     useEffect(() => {
         if (editor && block.type) {
-            // This is tricky. If type is 'heading', we need to set the node type in TipTap?
-            // Or typically, creating a 'heading' block means creating a TipTap instance configured as a heading?
-            // Actually, for a block-based editor, usually each block IS a specific node.
-            // But if we separate them, we can enforce it.
-            // For now, let's just assume `content` HTML carries the tag (<h1> etc).
+            // Placeholder for type-specific logic
         }
     }, [block.type, editor]);
+
+    // Sync changes from outside (e.g. from Socket)
+    useEffect(() => {
+        if (editor && block.content && block.content !== editor.getHTML()) {
+            if (!editor.isFocused) {
+                editor.commands.setContent(block.content);
+            }
+        }
+    }, [block.content, editor]);
 
     useEffect(() => {
         if (editor && autoFocus) {
@@ -71,8 +76,6 @@ const TipTapBlock = ({ block, autoFocus }) => {
             const { from } = editor.state.selection;
             const textBefore = editor.state.doc.textBetween(from - 1, from, '\n', '\0');
             if (textBefore === '/') {
-                // In a real slash command, we check if it is at start of line or properly spaced.
-                // For MVP: if block content is just "/", show menu.
                 if (editor.getText() === '/') {
                     setShowSlashMenu(true);
                 } else {
@@ -86,18 +89,6 @@ const TipTapBlock = ({ block, autoFocus }) => {
         editor.on('update', updateListener);
         return () => editor.off('update', updateListener);
     }, [editor]);
-
-    // Update config when block type changes
-    useEffect(() => {
-        if (editor && block.type) {
-            // For headings, we could enforce content structure.
-            // But simpler: just trust the editor to render HTML.
-            // However, placeholder needs update.
-            // The placeholder extension is configured at init. Update it via commands?
-            // TipTap extension re-config is tricky. 
-            // Re-rendering Component might be key if type changes?
-        }
-    }, [block.type, editor]);
 
     if (!editor) return null;
 
@@ -115,10 +106,8 @@ const TipTapBlock = ({ block, autoFocus }) => {
             )} />
 
             {showSlashMenu && (
-                // Import SlashMenu dynamically or just use it if imported
                 <SlashMenu blockId={block._id} onClose={() => {
                     setShowSlashMenu(false);
-                    // Maybe clear the "/"?
                     editor.commands.deleteRange({ from: editor.state.selection.from - 1, to: editor.state.selection.from });
                 }} />
             )}
