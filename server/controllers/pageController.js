@@ -4,22 +4,56 @@ import Block from '../models/Block.js';
 // @desc    Create a new page
 // @route   POST /api/pages
 // @access  Private
+// @desc    Create a new page
+// @route   POST /api/pages
+// @access  Private
 const createPage = async (req, res) => {
-    const { title, parentId, icon, coverUrl } = req.body;
+    const { title, parentId, icon, coverUrl, template } = req.body;
 
     try {
         const page = await Page.create({
             ownerId: req.user._id,
             parentId: parentId || null,
-            title: title || 'Untitled',
-            icon,
+            title: title || (template ? template.replace('-', ' ') : 'Untitled'),
+            icon: icon || (template ? '📝' : undefined),
             coverUrl,
         });
+
+        if (template) {
+            const templateBlocks = getTemplateBlocks(template, page._id);
+            if (templateBlocks.length > 0) {
+                await Block.insertMany(templateBlocks);
+            }
+        }
 
         res.status(201).json(page);
     } catch (error) {
         res.status(400).json({ message: 'Invalid page data' });
     }
+};
+
+// Helper for templates
+const getTemplateBlocks = (type, pageId) => {
+    const blocks = [];
+
+    if (type === 'meeting-notes') {
+        blocks.push(
+            { pageId, type: 'heading', content: '<h2>Agenda</h2>', props: { level: 2 }, order: 1000 },
+            { pageId, type: 'bullet-list', content: '<p>Topic 1</p>', order: 2000 },
+            { pageId, type: 'bullet-list', content: '<p>Topic 2</p>', order: 3000 },
+            { pageId, type: 'heading', content: '<h2>Action Items</h2>', props: { level: 2 }, order: 4000 },
+            { pageId, type: 'check-list', content: '<p>Task 1</p>', order: 5000 }
+        );
+    } else if (type === 'project-plan') {
+        blocks.push(
+            { pageId, type: 'heading', content: '<h2>Overview</h2>', props: { level: 2 }, order: 1000 },
+            { pageId, type: 'paragraph', content: '<p>Project goals and objectives...</p>', order: 2000 },
+            { pageId, type: 'heading', content: '<h2>Milestones</h2>', props: { level: 2 }, order: 3000 },
+            { pageId, type: 'bullet-list', content: '<p>Phase 1</p>', order: 4000 }
+        );
+    }
+
+    return blocks;
 };
 
 // @desc    Get all pages for current user (Flat list, frontend constructs tree)

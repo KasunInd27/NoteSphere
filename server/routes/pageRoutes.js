@@ -17,4 +17,9 @@ router.route('/:id')
 // Get blocks for a specific page
 router.route('/:pageId/blocks').get(protect, getBlocks);
 
+import { createSnapshot, getSnapshots } from '../controllers/snapshotController.js';
+router.route('/:pageId/snapshots')
+    .post(protect, createSnapshot)
+    .get(protect, getSnapshots);
+
 export default router;

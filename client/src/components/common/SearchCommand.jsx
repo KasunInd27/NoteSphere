@@ -80,6 +80,32 @@ const SearchCommand = () => {
                                 <Plus className="mr-2 h-4 w-4" />
                                 <span>Create new page</span>
                             </Command.Item>
+                            <Command.Item
+                                onSelect={async () => {
+                                    const newPage = await createPage("Meeting Notes", null, "meeting-notes");
+                                    if (newPage) {
+                                        navigate(`/pages/${newPage._id}`);
+                                        setOpen(false);
+                                    }
+                                }}
+                                className="relative flex cursor-default select-none items-center rounded-sm px-2 py-2 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer transition-colors"
+                            >
+                                <span className="mr-2 h-4 w-4 text-xs flex items-center justify-center">📝</span>
+                                <span>Create Meeting Notes</span>
+                            </Command.Item>
+                            <Command.Item
+                                onSelect={async () => {
+                                    const newPage = await createPage("Project Plan", null, "project-plan");
+                                    if (newPage) {
+                                        navigate(`/pages/${newPage._id}`);
+                                        setOpen(false);
+                                    }
+                                }}
+                                className="relative flex cursor-default select-none items-center rounded-sm px-2 py-2 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer transition-colors"
+                            >
+                                <span className="mr-2 h-4 w-4 text-xs flex items-center justify-center">🚀</span>
+                                <span>Create Project Plan</span>
+                            </Command.Item>
                         </Command.Group>
                     </Command.List>
                 </Command>

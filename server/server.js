@@ -9,6 +9,7 @@ import authRoutes from './routes/authRoutes.js';
 import pageRoutes from './routes/pageRoutes.js';
 import blockRoutes from './routes/blockRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import snapshotRoutes from './routes/snapshotRoutes.js';
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/pages', pageRoutes);
 app.use('/api/blocks', blockRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/snapshots', snapshotRoutes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');

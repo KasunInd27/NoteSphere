@@ -20,10 +20,10 @@ const usePageStore = create((set, get) => ({
         }
     },
 
-    createPage: async (title = "Untitled", parentId = null) => {
+    createPage: async (title = "Untitled", parentId = null, template = null) => {
         try {
             const response = await axios.post(`${API_URL}/api/pages`,
-                { title, parentId },
+                { title, parentId, template },
                 { withCredentials: true }
             );
             // Optimistic update or refetch
