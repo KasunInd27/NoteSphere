@@ -1,16 +1,15 @@
-import React from 'react';
-import { ChevronRight, File, Plus, Trash, MoreHorizontal } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useNavigate, useParams } from 'react-router-dom';
-import usePageStore from '@/store/usePageStore';
+import React from "react";
+import { ChevronRight, File, Plus, Trash, MoreHorizontal } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useNavigate, useParams } from "react-router-dom";
+import usePageStore from "@/store/usePageStore";
 
 const SidebarItem = ({ page, level = 0, onExpand, expanded }) => {
     const navigate = useNavigate();
-    const { id: activePageId } = useParams(); // Should correspond to current route param 'id'
+    const { id: activePageId } = useParams();
     const { createPage, deletePage } = usePageStore();
 
-    // Check local expansion state or store state
-    const isExpanded = expanded[page._id];
+    const isExpanded = expanded?.[page._id];
     const isActive = activePageId === page._id;
 
     const handleExpand = (e) => {
@@ -30,10 +29,12 @@ const SidebarItem = ({ page, level = 0, onExpand, expanded }) => {
 
     const onDelete = async (e) => {
         e.stopPropagation();
-        const confirm = window.confirm("Are you sure? This will delete all sub-pages too.");
-        if (confirm) {
+        const confirmed = window.confirm(
+            "Are you sure? This will delete all sub-pages too."
+        );
+        if (confirmed) {
             await deletePage(page._id);
-            if (isActive) navigate('/');
+            if (isActive) navigate("/");
         }
     };
 
@@ -43,35 +44,51 @@ const SidebarItem = ({ page, level = 0, onExpand, expanded }) => {
             onClick={onClick}
             style={{ paddingLeft: `${level * 12 + 12}px` }}
             className={cn(
-                "group min-h-[27px] text-sm py-1 pr-3 w-full hover:bg-neutral-200/50 dark:hover:bg-neutral-800 flex items-center text-muted-foreground font-medium transition-colors",
-                isActive && "bg-neutral-200/50 dark:bg-neutral-800 text-primary"
+                "group min-h-[28px] text-sm py-1 pr-3 w-full hover:bg-neutral-200/50 dark:hover:bg-neutral-800 flex items-center text-muted-foreground font-medium transition-colors cursor-pointer rounded-sm mx-1 max-w-[calc(100%-8px)]",
+                isActive && "bg-neutral-200 dark:bg-neutral-800 text-primary"
             )}
         >
             <div
                 role="button"
-                className="h-full rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600 mr-1 p-0.5"
+                className="h-5 w-5 rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600 flex items-center justify-center mr-0.5 shrink-0 transition"
                 onClick={handleExpand}
             >
-                <ChevronRight className={cn(
-                    "h-4 w-4 shrink-0 text-muted-foreground/50 transition-transform",
-                    isExpanded && "rotate-90"
-                )} />
+                <ChevronRight
+                    className={cn(
+                        "h-3.5 w-3.5 text-muted-foreground/70 transition-transform",
+                        isExpanded && "rotate-90"
+                    )}
+                />
             </div>
 
-            {page.icon ? (
-                <span className="text-[18px] mr-2 shrink-0">{page.icon}</span>
-            ) : (
-                <File className="h-[18px] w-[18px] mr-2 text-muted-foreground shrink-0" />
-            )}
+            <div className="flex items-center gap-x-2 truncate">
+                {page.icon ? (
+                    <span className="text-[16px] shrink-0 leading-none">{page.icon}</span>
+                ) : (
+                    <File className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />
+                )}
+                <span className="truncate leading-none py-0.5">
+                    {page.title || "Untitled"}
+                </span>
+            </div>
 
-            <span className="truncate">{page.title}</span>
-
-            <div className="ml-auto flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <div role="button" onClick={onDelete} className="h-6 w-6 flex items-center justify-center rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600 mr-1">
-                    <Trash className="h-4 w-4 text-muted-foreground" />
+            <div className="ml-auto flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-x-0.5">
+                <div
+                    role="button"
+                    onClick={onDelete}
+                    className="h-5 w-5 flex items-center justify-center rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600"
+                >
+                    <Trash className="h-3 w-3 text-muted-foreground" />
                 </div>
-                <div role="button" onClick={onCreateChild} className="h-6 w-6 flex items-center justify-center rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600">
-                    <Plus className="h-4 w-4 text-muted-foreground" />
+                <div
+                    role="button"
+                    onClick={onCreateChild}
+                    className="h-5 w-5 flex items-center justify-center rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600"
+                >
+                    <Plus className="h-3 w-3 text-muted-foreground" />
+                </div>
+                <div className="h-5 w-5 flex items-center justify-center rounded-sm hover:bg-neutral-300 dark:hover:bg-neutral-600">
+                    <MoreHorizontal className="h-3 w-3 text-muted-foreground" />
                 </div>
             </div>
         </div>

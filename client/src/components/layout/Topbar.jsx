@@ -12,25 +12,37 @@ const Topbar = () => {
     const currentPage = pages.find(p => p._id === id);
 
     return (
-        <nav className="bg-background dark:bg-[#1F1F1F] px-4 py-2 border-b flex items-center gap-x-4 h-12 w-full">
-            <div className="flex items-center gap-x-2 flex-1">
+        <nav className="bg-background/80 dark:bg-[#1F1F1F] backdrop-blur-sm px-4 py-2 w-full h-14 flex items-center gap-x-4 border-b border-border/40 sticky top-0 z-40">
+            <div className="flex items-center gap-x-2 flex-1 min-w-0">
+                {/* Mobile menu trigger could go here */}
+
                 {currentPage ? (
-                    <div className="flex items-center text-sm font-medium">
-                        <span className="text-muted-foreground mr-2">/</span>
-                        {currentPage.icon && <span className="mr-2">{currentPage.icon}</span>}
-                        <span>{currentPage.title}</span>
+                    <div className="flex items-center text-sm">
+                        {/* Fake breadcrumb path for visual */}
+                        <span className="text-muted-foreground px-1">/</span>
+                        <div className="flex items-center gap-x-1.5 px-2 py-1 rounded-md hover:bg-muted/50 transition-colors cursor-pointer min-w-0">
+                            {currentPage.icon && <span className="text-base leading-none">{currentPage.icon}</span>}
+                            <span className="font-medium truncate text-foreground">{currentPage.title}</span>
+                        </div>
                     </div>
                 ) : (
-                    <div className="text-sm font-medium text-muted-foreground">Index</div>
+                    <div className="flex items-center text-sm font-medium text-muted-foreground/80 px-2">Dashboard</div>
                 )}
             </div>
 
-            <div className="flex items-center gap-x-2">
-                <div className="text-xs text-muted-foreground">
-                    {/* Status indicator can go here: "Saved" */}
-                    Saved
+            <div className="flex items-center gap-x-3">
+                {/* Status or Last Edited */}
+                <div className="flex items-center gap-x-1 text-xs text-muted-foreground/60 hidden sm:flex">
+                    {currentPage && <span>Edited just now</span>}
                 </div>
-                <ModeToggle />
+
+                {/* Divider */}
+                <div className="h-4 w-[1px] bg-border mx-1" />
+
+                <div className="flex items-center gap-x-2">
+                    {/* Share/Star Buttons can go here */}
+                    <ModeToggle />
+                </div>
             </div>
         </nav>
     );

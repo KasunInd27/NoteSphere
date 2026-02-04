@@ -62,12 +62,18 @@ const AvatarUpload = ({ className }) => {
         multiple: false
     });
 
+    // Extract sizing classes from className if present, or default to w-24 h-24
+    // Actually, simpler: Use a wrapper div for positioning, and inner div for the circle structure.
+    // If className is passed, applying it to the outer div is correct. 
+    // BUT we need to override the inner div's fixed dimensions if the user wants a small icon.
+    // Let's make the inner div take full width/height of the container.
+
     return (
         <div className={cn("relative group", className)}>
             <div
                 {...getRootProps()}
                 className={cn(
-                    "relative w-24 h-24 rounded-full overflow-hidden border-2 border-muted bg-muted flex items-center justify-center cursor-pointer transition-colors",
+                    "relative w-full h-full rounded-full overflow-hidden border-2 border-muted bg-muted flex items-center justify-center cursor-pointer transition-colors",
                     isDragActive && "border-primary",
                     isUploading && "opacity-50 pointer-events-none"
                 )}
@@ -77,21 +83,24 @@ const AvatarUpload = ({ className }) => {
                 {user?.avatar?.url ? (
                     <img src={user.avatar.url} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
-                    <span className="text-2xl font-bold text-muted-foreground">
+                    <span className={cn("font-bold text-muted-foreground",
+                        // approximate text size based on container? easier to just use 'text-xs' or whatever 
+                        // For now let's rely on parent font size or defaults.
+                        "text-xs sm:text-2xl"
+                    )}>
                         {user?.name?.[0]?.toUpperCase()}
                     </span>
                 )}
 
                 {/* Hover Overlay */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                    <Camera className="text-white w-6 h-6" />
+                    <Camera className="text-white w-1/2 h-1/2" />
                 </div>
 
-                {/* Progress / Loading */}
+                {/* Progress */}
                 {isUploading && (
                     <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                        <Loader2 className="animate-spin w-8 h-8 text-primary" />
-                        {progress > 0 && <span className="absolute text-[10px] font-bold">{progress}%</span>}
+                        <Loader2 className="animate-spin w-1/2 h-1/2 text-primary" />
                     </div>
                 )}
             </div>
