@@ -5,6 +5,7 @@ import usePageStore from '@/store/usePageStore';
 import SidebarItem from './SidebarItem';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '@/store/useAuthStore';
+import AvatarUpload from '@/components/common/AvatarUpload';
 
 // Recursive render helper
 const renderTree = (pages, parentId = null, level = 0, expanded, toggleExpand) => {
@@ -49,10 +50,8 @@ const Sidebar = () => {
     return (
         <aside className="h-full bg-secondary/30 w-60 flex flex-col border-r group relative z-[99999]" style={{ height: '100vh' }}>
             {/* Header / User Profile */}
-            <div className="p-3 pl-4 flex items-center gap-x-2 hover:bg-neutral-200/50 cursor-pointer transition">
-                <div className="h-5 w-5 bg-primary/10 rounded items-center flex justify-center text-xs font-medium">
-                    {user?.name?.[0]}
-                </div>
+            <div className="p-3 pl-4 flex items-center gap-x-2 transition">
+                <AvatarUpload className="w-6 h-6 rounded-full" />
                 <span className="text-sm font-medium truncate">
                     {user?.name}'s Workspace
                 </span>

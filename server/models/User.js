@@ -15,8 +15,9 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    avatarUrl: {
-        type: String,
+    avatar: {
+        url: { type: String },
+        key: { type: String }
     },
 }, {
     timestamps: true,

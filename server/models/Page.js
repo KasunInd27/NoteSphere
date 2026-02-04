@@ -19,13 +19,9 @@ const pageSchema = new mongoose.Schema({
         type: String, // Emoji or URL
         default: null,
     },
-    coverUrl: {
-        type: String,
-        default: null,
-    },
-    coverPublicId: {
-        type: String, // Cloudinary ID for deletion
-        default: null,
+    cover: {
+        url: { type: String, default: null },
+        key: { type: String, default: null }
     },
     isArchived: {
         type: Boolean,

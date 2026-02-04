@@ -9,8 +9,13 @@ const blockSchema = new mongoose.Schema({
     type: {
         type: String,
         required: true,
-        enum: ['paragraph', 'heading', 'bulletList', 'orderedList', 'todo', 'code', 'image', 'divider', 'quote', 'callout'],
+        enum: ['paragraph', 'heading', 'bulletList', 'orderedList', 'todo', 'code', 'image', 'video', 'pdf', 'divider', 'quote', 'callout'],
         default: 'paragraph',
+    },
+    file: {
+        url: { type: String },
+        key: { type: String },
+        mimeType: { type: String }
     },
     content: {
         type: mongoose.Schema.Types.Mixed, // Can be string or object (for JSON content)

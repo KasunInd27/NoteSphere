@@ -5,6 +5,9 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 import useBlockStore from '@/store/useBlockStore';
 import SortableBlock from './SortableBlock';
+import CoverUpload from '@/components/common/CoverUpload';
+import usePageStore from '@/store/usePageStore';
+
 
 const PageEditor = ({ pageId }) => {
     const { blocks, fetchBlocks, isLoading, reorderBlocks, addBlock } = useBlockStore();
@@ -68,48 +71,85 @@ const PageEditor = ({ pageId }) => {
     // Let's rely on standard logic: newly mounted component at end or specific position?
     // SortableBlock passes `autoFocus` if ID matches?
 
+    const { pages, updatePageIcon } = usePageStore();
+    const currentPage = pages.find(p => p._id === pageId);
+
     if (isLoading) return <div className="p-10">Loading editor...</div>;
 
     return (
-        <div className="max-w-4xl mx-auto pb-40">
-            <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                modifiers={[restrictToVerticalAxis]}
-            >
-                <SortableContext
-                    items={blocks.map(b => b._id)}
-                    strategy={verticalListSortingStrategy}
-                >
-                    <div className="space-y-1">
-                        {blocks.map((block) => (
-                            <SortableBlock
-                                key={block._id}
-                                block={block}
-                                autoFocus={focusedBlockId === block._id}
-                            />
-                        ))}
-                    </div>
-                </SortableContext>
+        <div className="pb-40">
+            {/* Page Cover & Icon */}
+            {currentPage && (
+                <div className="group relative">
+                    <CoverUpload
+                        pageId={pageId}
+                        cover={currentPage.cover}
+                        onUpdate={(newCover) => {
+                            // Force refresh or optimistic update store?
+                            // usePageStore needs an updatePage method (we have fetchPages, createPage).
+                            // We should add `updatePage` to store to handle local state update.
+                            // For now, fetchPages is called on mount, maybe enough.
+                            // But CoverUpload calls API directly. Ideally updating store is better.
+                        }}
+                    />
 
-                {/* Drag Overlay for smooth visual */}
-                <DragOverlay>
-                    {activeId ? (
-                        <div className="bg-background border rounded shadow-lg p-2 opacity-80">
-                            Moving...
+                    <div className="max-w-4xl mx-auto px-12 relative">
+                        {/* Icon */}
+                        <div className="absolute -top-10 left-12 h-20 w-20 text-6xl shadow-sm rounded-md bg-background border flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors group/icon">
+                            {currentPage.icon || "📄"}
+                            {/* Icon picker trigger */}
                         </div>
-                    ) : null}
-                </DragOverlay>
-            </DndContext>
 
-            {/* Empty area click to add at bottom */}
-            <div
-                className="h-40 cursor-text -ml-8 pl-8"
-                onClick={() => addBlock(pageId, blocks[blocks.length - 1]?._id)}
-            >
-                {blocks.length === 0 && <span className="text-muted-foreground/50">Click to add content...</span>}
+                        {/* Title */}
+                        <div className="mt-14 mb-4">
+                            <h1 className="text-4xl font-bold outline-none placeholder:text-muted-foreground/50 break-words" contentEditable suppressContentEditableWarning>
+                                {currentPage.title}
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="max-w-4xl mx-auto px-12">
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                    modifiers={[restrictToVerticalAxis]}
+                >
+                    <SortableContext
+                        items={blocks.map(b => b._id)}
+                        strategy={verticalListSortingStrategy}
+                    >
+                        <div className="space-y-1">
+                            {blocks.map((block) => (
+                                <SortableBlock
+                                    key={block._id}
+                                    block={block}
+                                    autoFocus={focusedBlockId === block._id}
+                                />
+                            ))}
+                        </div>
+                    </SortableContext>
+
+                    {/* Drag Overlay for smooth visual */}
+                    <DragOverlay>
+                        {activeId ? (
+                            <div className="bg-background border rounded shadow-lg p-2 opacity-80">
+                                Moving...
+                            </div>
+                        ) : null}
+                    </DragOverlay>
+                </DndContext>
+
+                {/* Empty area click to add at bottom */}
+                <div
+                    className="h-40 cursor-text -ml-8 pl-8"
+                    onClick={() => addBlock(pageId, blocks[blocks.length - 1]?._id)}
+                >
+                    {blocks.length === 0 && <span className="text-muted-foreground/50">Click to add content...</span>}
+                </div>
             </div>
         </div>
     );

@@ -25,12 +25,15 @@ const googleLogin = async (req, res) => {
                 googleId,
                 email,
                 name,
-                avatarUrl: picture,
+                avatar: { url: picture, key: null }, // Google defaults have no key
             });
         } else {
             // Update info if changed
             user.name = name;
-            user.avatarUrl = picture;
+            if (!user.avatar?.key) {
+                // Only update avatar from Google if we haven't set a custom one (which would have a key)
+                user.avatar = { url: picture, key: null };
+            }
             await user.save();
         }
 
@@ -40,7 +43,7 @@ const googleLogin = async (req, res) => {
             _id: user._id,
             name: user.name,
             email: user.email,
-            avatarUrl: user.avatarUrl,
+            avatar: user.avatar,
         });
     } catch (error) {
         console.error(error);
@@ -70,7 +73,7 @@ const getMe = async (req, res) => {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
-                avatarUrl: user.avatarUrl,
+                avatar: user.avatar,
             });
         } else {
             res.status(404).json({ message: 'User not found' });
@@ -80,4 +83,33 @@ const getMe = async (req, res) => {
     }
 };
 
-export { googleLogin, logoutUser, getMe };
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+const updateProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            user.name = req.body.name || user.name;
+            if (req.body.avatar) {
+                user.avatar = req.body.avatar; // { url, key }
+            }
+
+            const updatedUser = await user.save();
+
+            res.json({
+                _id: updatedUser._id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                avatar: updatedUser.avatar,
+            });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export { googleLogin, logoutUser, getMe, updateProfile };

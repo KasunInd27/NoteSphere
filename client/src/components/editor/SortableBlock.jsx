@@ -3,6 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Plus } from 'lucide-react';
 import TipTapBlock from './TipTapBlock';
+import AttachmentBlock from './AttachmentBlock';
 
 const SortableBlock = ({ block, autoFocus }) => {
     const {
@@ -46,7 +47,11 @@ const SortableBlock = ({ block, autoFocus }) => {
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-                <TipTapBlock block={block} autoFocus={autoFocus} />
+                {['image', 'video', 'pdf'].includes(block.type) ? (
+                    <AttachmentBlock block={block} />
+                ) : (
+                    <TipTapBlock block={block} autoFocus={autoFocus} />
+                )}
             </div>
         </div>
     );

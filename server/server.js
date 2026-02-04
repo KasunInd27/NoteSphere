@@ -8,6 +8,7 @@ import { Server } from 'socket.io'; // will use later
 import authRoutes from './routes/authRoutes.js';
 import pageRoutes from './routes/pageRoutes.js';
 import blockRoutes from './routes/blockRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/pages', pageRoutes);
 app.use('/api/blocks', blockRoutes);
+app.use('/api/uploads', uploadRoutes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');
