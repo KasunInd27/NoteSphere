@@ -17,6 +17,10 @@ const createPage = async (req, res) => {
             title: title || (template ? template.replace('-', ' ') : 'Untitled'),
             icon: icon || (template ? '📝' : undefined),
             coverUrl,
+            properties: {
+                createdBy: req.user._id,
+                lastEditedBy: req.user._id
+            }
         });
 
         if (template) {
@@ -97,6 +101,17 @@ const updatePage = async (req, res) => {
             page.coverUrl = req.body.coverUrl !== undefined ? req.body.coverUrl : page.coverUrl;
             page.coverPublicId = req.body.coverPublicId !== undefined ? req.body.coverPublicId : page.coverPublicId;
             page.isArchived = req.body.isArchived !== undefined ? req.body.isArchived : page.isArchived;
+
+            // Update properties if provided
+            if (req.body.properties) {
+                if (req.body.properties.tags !== undefined) {
+                    page.properties.tags = req.body.properties.tags;
+                }
+                if (req.body.properties.status !== undefined) {
+                    page.properties.status = req.body.properties.status;
+                }
+                page.properties.lastEditedBy = req.user._id;
+            }
 
             const updatedPage = await page.save();
             res.json(updatedPage);

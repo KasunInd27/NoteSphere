@@ -1,0 +1,13 @@
+/* Tippy.js theme for slash command menu */
+.tippy-box[data-theme~='slash-command'] {
+    background-color: transparent;
+    padding: 0;
+}
+
+.tippy-box[data-theme~='slash-command'] .tippy-content {
+    padding: 0;
+}
+
+.tippy-box[data-theme~='slash-command'] .tippy-arrow {
+    display: none;
+}

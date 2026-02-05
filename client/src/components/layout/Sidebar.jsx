@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { Plus, Settings, ChevronRight } from "lucide-react";
+import React, { useEffect, useState, useMemo } from "react";
+import { Plus, Settings, ChevronRight, ChevronDown, Star, Clock } from "lucide-react";
 import usePageStore from "@/store/usePageStore";
 import SidebarItem from "./SidebarItem";
 import { useNavigate } from "react-router-dom";
@@ -34,8 +34,37 @@ const Sidebar = () => {
         fetchRecentPages
     } = usePageStore();
     const { user } = useAuthStore();
-    const [showFavorites, setShowFavorites] = React.useState(true);
-    const [showRecent, setShowRecent] = React.useState(true);
+
+    // Manage expanded sections
+    const [expandedSections, setExpandedSections] = useState({
+        favorites: true,
+        recent: true
+    });
+
+    const toggleSection = (key) => {
+        setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    // Deduplicate favorites and recents by _id to prevent duplicate React keys
+    const uniqueFavorites = useMemo(() => {
+        const seen = new Map();
+        favoritePages.forEach(page => {
+            if (page._id && !seen.has(page._id)) {
+                seen.set(page._id, page);
+            }
+        });
+        return Array.from(seen.values());
+    }, [favoritePages]);
+
+    const uniqueRecents = useMemo(() => {
+        const seen = new Map();
+        recentPages.forEach(page => {
+            if (page._id && !seen.has(page._id)) {
+                seen.set(page._id, page);
+            }
+        });
+        return Array.from(seen.values());
+    }, [recentPages]);
 
     useEffect(() => {
         fetchPages();
@@ -89,53 +118,50 @@ const Sidebar = () => {
 
             {/* Page Tree */}
             <div className="flex-1 overflow-y-auto px-2 pb-2">
-                {/* Favorites Section */}
-                {favoritePages.length > 0 && (
-                    <div className="mb-4">
-                        <div
-                            onClick={() => setShowFavorites(!showFavorites)}
-                            className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground/50 px-3 py-1 mb-1 cursor-pointer hover:text-muted-foreground/70 transition"
-                        >
-                            <ChevronRight className={cn(
-                                "h-3 w-3 transition-transform",
-                                showFavorites && "rotate-90"
-                            )} />
-                            <span>Favorites</span>
+                {/* Favorites */}
+                <div>
+                    <button
+                        onClick={() => toggleSection('favorites')}
+                        className="flex items-center gap-2 w-full px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        {expandedSections.favorites ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                        <Star size={16} />
+                        <span>Favorites</span>
+                    </button>
+                    {expandedSections.favorites && (
+                        <div className="mt-1">
+                            {uniqueFavorites.length > 0 ? (
+                                uniqueFavorites.map((page) => (
+                                    <SidebarItem key={`fav-${page._id}`} page={page} />
+                                ))
+                            ) : (
+                                <div className="px-3 py-2 text-xs text-muted-foreground">
+                                    No favorites yet
+                                </div>
+                            )}
                         </div>
-                        {showFavorites && (
-                            <div className="space-y-0.5">
-                                {favoritePages.map(page => (
-                                    <SidebarItem
-                                        key={page._id}
-                                        page={page}
-                                        level={0}
-                                        expanded={expanded}
-                                        onExpand={toggleExpand}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                )}
+                    )}
+                </div>
+
 
                 {/* Recent Section */}
-                {recentPages.length > 0 && (
+                {uniqueRecents.length > 0 && (
                     <div className="mb-4">
                         <div
-                            onClick={() => setShowRecent(!showRecent)}
+                            onClick={() => toggleSection('recent')}
                             className="flex items-center gap-x-1 text-xs font-semibold text-muted-foreground/50 px-3 py-1 mb-1 cursor-pointer hover:text-muted-foreground/70 transition"
                         >
                             <ChevronRight className={cn(
                                 "h-3 w-3 transition-transform",
-                                showRecent && "rotate-90"
+                                expandedSections.recent && "rotate-90"
                             )} />
                             <span>Recent</span>
                         </div>
-                        {showRecent && (
+                        {expandedSections.recent && (
                             <div className="space-y-0.5">
-                                {recentPages.slice(0, 5).map(page => (
+                                {uniqueRecents.map(page => (
                                     <SidebarItem
-                                        key={page._id}
+                                        key={`recent-${page._id}`}
                                         page={page}
                                         level={0}
                                         expanded={expanded}

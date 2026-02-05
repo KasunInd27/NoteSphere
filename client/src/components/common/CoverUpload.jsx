@@ -8,7 +8,7 @@ import usePageStore from '@/store/usePageStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const CoverUpload = ({ pageId, cover, onUpdate }) => {
+const CoverUpload = ({ pageId, cover, onUpdate, className = "" }) => {
     const { uploadFile, deleteFile, isUploading, progress } = useUpload();
 
     // cover is { url, key }

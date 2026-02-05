@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Plus } from 'lucide-react';
+import { GripVertical, Plus, Trash2 } from 'lucide-react';
+import useBlockStore from '@/store/useBlockStore';
 import TipTapBlock from './TipTapBlock';
 import AttachmentBlock from './AttachmentBlock';
+import DividerBlock from './DividerBlock';
+import QuoteBlock from './QuoteBlock';
+import CalloutBlock from './CalloutBlock';
 
 const SortableBlock = ({ block, autoFocus }) => {
     const {
@@ -23,24 +27,31 @@ const SortableBlock = ({ block, autoFocus }) => {
         position: 'relative'
     };
 
-    const [showHandle, setShowHandle] = useState(false);
+    const { deleteBlock } = useBlockStore();
 
     // We only enable drag handle when hovering the row
     return (
         <div
             ref={setNodeRef}
             style={style}
-            className="group relative flex items-start -ml-8 pl-8 py-1"
-            onMouseEnter={() => setShowHandle(true)}
-            onMouseLeave={() => setShowHandle(false)}
+            className="group relative flex items-start -ml-12 pl-12 py-1"
         >
-            {/* Drag Handle & Menu Trigger */}
-            <div
-                className="absolute left-0 top-1.5 w-6 h-6 flex items-center justify-center cursor-grab text-muted-foreground/40 hover:text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                {...attributes}
-                {...listeners}
-            >
-                <GripVertical size={18} />
+            {/* Action Bar (Grip + Trash) */}
+            <div className="absolute left-0 top-1.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div
+                    className="w-5 h-6 flex items-center justify-center cursor-grab text-muted-foreground/30 hover:text-muted-foreground transition-colors"
+                    {...attributes}
+                    {...listeners}
+                >
+                    <GripVertical size={16} />
+                </div>
+                <button
+                    onClick={() => deleteBlock(block._id)}
+                    className="w-5 h-6 flex items-center justify-center text-muted-foreground/30 hover:text-destructive transition-colors rounded-md hover:bg-destructive/10"
+                    title="Delete block"
+                >
+                    <Trash2 size={14} />
+                </button>
             </div>
 
             {/* Adding button (optional, maybe on hover?) */}
@@ -49,8 +60,14 @@ const SortableBlock = ({ block, autoFocus }) => {
             <div className="flex-1 min-w-0">
                 {['image', 'video', 'pdf'].includes(block.type) ? (
                     <AttachmentBlock block={block} />
+                ) : block.type === 'divider' ? (
+                    <DividerBlock block={block} />
+                ) : block.type === 'quote' ? (
+                    <QuoteBlock block={block} />
+                ) : block.type === 'callout' ? (
+                    <CalloutBlock block={block} />
                 ) : (
-                    <TipTapBlock block={block} autoFocus={autoFocus} />
+                    <TipTapBlock key={block._id} block={block} autoFocus={autoFocus} />
                 )}
             </div>
         </div>

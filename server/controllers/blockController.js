@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Block from '../models/Block.js';
 import Page from '../models/Page.js';
 
@@ -25,8 +26,13 @@ const getBlocks = async (req, res) => {
 const createBlock = async (req, res) => {
     const { pageId, type, content, order, props } = req.body;
     try {
+        console.log('Create block request:', { pageId, type, userId: req.user?._id });
+
         const page = await Page.findOne({ _id: pageId, ownerId: req.user._id });
-        if (!page) return res.status(404).json({ message: 'Page not found' });
+        if (!page) {
+            console.log('Page not found or unauthorized:', pageId);
+            return res.status(404).json({ message: 'Page not found' });
+        }
 
         const block = await Block.create({
             pageId,
@@ -35,33 +41,84 @@ const createBlock = async (req, res) => {
             order,
             props
         });
+
+        console.log('Block created successfully:', block._id);
         res.status(201).json(block);
     } catch (error) {
+        console.error('Create block error:', error);
         res.status(400).json({ message: error.message });
     }
 }
 
 // @desc    Update a block
-// @route   PUT /api/blocks/:id
+// @route   PUT/PATCH /api/blocks/:id
 // @access  Private
 const updateBlock = async (req, res) => {
     try {
-        const block = await Block.findById(req.params.id);
-        if (!block) return res.status(404).json({ message: 'Block not found' });
+        const blockId = req.params.id;
+
+        // Validate ObjectId format
+        if (!mongoose.Types.ObjectId.isValid(blockId)) {
+            return res.status(400).json({
+                message: 'Invalid block ID format',
+                id: blockId
+            });
+        }
+
+        console.log('📝 Update block request:', {
+            id: blockId,
+            bodyKeys: Object.keys(req.body),
+            userId: req.user?._id
+        });
+
+        // Debug: Count total blocks in DB
+        const totalBlocks = await Block.countDocuments();
+        console.log('📊 Total blocks in database:', totalBlocks);
+
+        // Find the block first
+        const block = await Block.findById(blockId);
+
+        if (!block) {
+            return res.status(404).json({
+                message: 'Block not found',
+                id: blockId
+            });
+        }
+
+        console.log('✅ Block found:', {
+            blockId: block._id,
+            pageId: block.pageId,
+            type: block.type
+        });
 
         // Verify ownership via page
         const page = await Page.findOne({ _id: block.pageId, ownerId: req.user._id });
-        if (!page) return res.status(401).json({ message: 'Not authorized' });
+        if (!page) {
+            console.log('🔒 Unauthorized access to block:', blockId);
+            return res.status(401).json({ message: 'Not authorized' });
+        }
 
-        block.content = req.body.content !== undefined ? req.body.content : block.content;
-        block.type = req.body.type || block.type;
-        block.props = req.body.props || block.props;
-        block.order = req.body.order !== undefined ? req.body.order : block.order;
+        // Build update object - only update fields that are provided
+        const update = {};
+        if (req.body.content !== undefined) update.content = req.body.content;
+        if (req.body.type !== undefined) update.type = req.body.type;
+        if (req.body.props !== undefined) update.props = req.body.props;
+        if (req.body.order !== undefined) update.order = req.body.order;
 
-        const updatedBlock = await block.save();
+        console.log('🔄 Updating block with:', update);
+
+        // Update and return new document
+        const updatedBlock = await Block.findByIdAndUpdate(
+            blockId,
+            update,
+            { new: true, runValidators: true }
+        );
+
+        console.log('✅ Block updated successfully:', updatedBlock._id);
         res.json(updatedBlock);
 
     } catch (error) {
+        console.error('❌ Update block error:', error);
         res.status(400).json({ message: error.message });
     }
 }

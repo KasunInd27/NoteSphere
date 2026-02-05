@@ -24,9 +24,14 @@ mongoose.connect(process.env.MONGODB_URI)
 const app = express();
 const httpServer = createServer(app);
 
+// Allowed origins for CORS
+const allowedOrigins = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+    : ['http://localhost:5173'];
+
 // Middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: allowedOrigins,
     credentials: true,
 }));
 app.use(express.json());
@@ -48,7 +53,8 @@ app.get('/', (req, res) => {
 // Socket.io setup
 const io = new Server(httpServer, {
     cors: {
-        origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+        origin: allowedOrigins,
+        credentials: true,
         methods: ["GET", "POST"]
     }
 });

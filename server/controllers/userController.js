@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Page from '../models/Page.js';
 
@@ -21,16 +22,16 @@ const toggleFavorite = async (req, res) => {
 
         const isFavorite = user.favorites.includes(pageId);
 
-        if (isFavorite) {
-            // Remove from favorites
-            user.favorites = user.favorites.filter(id => id.toString() !== pageId);
-        } else {
-            // Add to favorites
-            user.favorites.push(pageId);
-        }
+        // Atomic update
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user._id,
+            isFavorite
+                ? { $pull: { favorites: pageId } }
+                : { $addToSet: { favorites: pageId } },
+            { new: true }
+        );
 
-        await user.save();
-        res.json({ favorites: user.favorites, isFavorite: !isFavorite });
+        res.json({ favorites: updatedUser.favorites, isFavorite: !isFavorite });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -56,16 +57,20 @@ const getFavorites = async (req, res) => {
     }
 };
 
-// @desc    Track page visit
+// @desc    Track page visit (for recents)
 // @route   POST /api/users/recent/:pageId
 // @access  Private
 const trackPageVisit = async (req, res) => {
     try {
         const { pageId } = req.params;
-        const user = await User.findById(req.user._id);
 
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+        // Validate ObjectId format
+        if (!mongoose.Types.ObjectId.isValid(pageId)) {
+            return res.status(400).json({ message: 'Invalid page ID format' });
+        }
+
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ message: 'User not authenticated' });
         }
 
         // Check if page exists and user owns it
@@ -74,24 +79,37 @@ const trackPageVisit = async (req, res) => {
             return res.status(404).json({ message: 'Page not found' });
         }
 
-        // Remove existing entry if present
-        user.recentPages = user.recentPages.filter(
-            item => item.pageId.toString() !== pageId
+        // Atomic update to prevent version conflicts
+        // 1. Remove existing entry for this page (if any)
+        // 2. Add to front with current timestamp
+        // 3. Limit to 10 items using $slice
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                $pull: { recentPages: { pageId: pageId } }
+            },
+            { new: true }
         );
 
-        // Add to beginning
-        user.recentPages.unshift({
-            pageId,
-            lastOpenedAt: new Date()
-        });
+        // Now push to front
+        await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                $push: {
+                    recentPages: {
+                        $each: [{ pageId, lastOpenedAt: new Date() }],
+                        $position: 0,
+                        $slice: 10 // Keep only first 10 items
+                    }
+                }
+            },
+            { new: true }
+        );
 
-        // Keep only last 10
-        user.recentPages = user.recentPages.slice(0, 10);
-
-        await user.save();
-        res.json({ success: true });
+        res.json({ ok: true });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Track page visit error:', error);
+        res.status(500).json({ message: error.message || 'Server error' });
     }
 };
 

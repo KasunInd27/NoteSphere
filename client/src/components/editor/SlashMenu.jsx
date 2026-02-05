@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Type, List, Heading1, Heading2, CheckSquare, Code, Quote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useBlockStore from '@/store/useBlockStore';
@@ -31,6 +32,7 @@ const SlashMenu = ({ blockId, onClose }) => {
                 const item = MENU_ITEMS[selectedIndex];
                 selectItem(item);
             } else if (e.key === 'Escape') {
+                e.preventDefault();
                 onClose();
             }
         };
@@ -39,50 +41,57 @@ const SlashMenu = ({ blockId, onClose }) => {
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [selectedIndex]);
 
+    // Close on click outside
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) {
+                onClose();
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [onClose]);
+
     const selectItem = (item) => {
         // Update block type and props
-        // Also clear the "/" content if it exists? 
-        // TipTapBlock handles the HTML content, but Type is stored on Block model.
-        // We need to update the block model content to remove the "/" maybe?
-        // Or just let store handle it.
-        updateBlock(blockId, '', item.props || {}); // Reset content? Or keep?
-
-        // Actually we need to call a special "changeType" action in store to handle converting content if possible.
-        // For MVP, just update 'type' in sending updateBlock?
-        // updateBlock arguments: (id, content, props) ... wait, updateBlock doesn't take type.
-        // We need to update type.
-
-        // Hack: We need a generic update method in store.
-        // For now, let's assume updateBlock also accepts type in a new API or add a separate one.
-        // Let's modify useBlockStore first.
-
-        // Assuming we modify store to accept `type` or we pass it in `props`?
-        // The Block model has top-level `type`.
-        // Let's do a direct axios call or correct the store.
+        // Note: This is a simplified version. In production, you'd want to:
+        // 1. Clear the "/" character
+        // 2. Convert content if needed
+        // 3. Update block type via a proper API
+        updateBlock(blockId, '', item.props || {});
         onClose();
     };
 
-    // Positioning is hard without floating-ui. 
-    // Simply render inline or fixed for MVP.
-    // Let's try rendering it right below the block or as a popover.
-
-    return (
-        <div className="absolute z-50 w-60 bg-popover border rounded-md shadow-md overflow-hidden animate-in fade-in zoom-in-95 duration-100 p-1" style={{ top: '100%', left: 0 }}>
-            <div className="text-xs font-semibold text-muted-foreground px-2 py-1.5">Basic blocks</div>
-            {MENU_ITEMS.map((item, index) => (
-                <div
-                    key={item.label}
-                    className={cn(
-                        "flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm cursor-pointer",
-                        index === selectedIndex ? "bg-accent text-accent-foreground" : "hover:bg-muted"
-                    )}
-                    onClick={() => selectItem(item)}
-                >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                </div>
-            ))}
-        </div>
+    return createPortal(
+        <div
+            ref={menuRef}
+            className="fixed z-[9999] w-64 bg-popover border border-border rounded-md shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+            style={{
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+            }}
+        >
+            <div className="p-1">
+                <div className="text-xs font-semibold text-muted-foreground px-2 py-1.5">Basic blocks</div>
+                {MENU_ITEMS.map((item, index) => (
+                    <div
+                        key={item.label}
+                        className={cn(
+                            "flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm cursor-pointer transition-colors",
+                            index === selectedIndex ? "bg-accent text-accent-foreground" : "hover:bg-muted"
+                        )}
+                        onClick={() => selectItem(item)}
+                        onMouseEnter={() => setSelectedIndex(index)}
+                    >
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span>{item.label}</span>
+                    </div>
+                ))}
+            </div>
+        </div>,
+        document.body
     );
 };
 

@@ -8,14 +8,8 @@ import useSocketStore from './useSocketStore'; // Import for socket emitting
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-// Debounce helper
-const debounce = (func, wait) => {
-    let timeout;
-    return (...args) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func(...args), wait);
-    };
-};
+const saveTimers = new Map();
+const deletingIds = new Set();
 
 const useBlockStore = create((set, get) => ({
     blocks: [],
@@ -26,7 +20,7 @@ const useBlockStore = create((set, get) => ({
     fetchBlocks: async (pageId) => {
         set({ isLoading: true });
         try {
-            const response = await axios.get(`${API_URL}/api/pages/${pageId}/blocks`, { withCredentials: true });
+            const response = await axios.get(`${API_URL}/api/blocks/page/${pageId}`, { withCredentials: true });
             set({ blocks: response.data, isLoading: false });
         } catch (error) {
             console.error('Failed to fetch blocks', error);
@@ -34,8 +28,48 @@ const useBlockStore = create((set, get) => ({
         }
     },
 
-    // Update a single block (optimistic + debounce save)
+    // Save a block to the backend
+    saveBlock: async (id) => {
+        // Guard: Stop if block is being deleted
+        if (deletingIds.has(id)) return;
+
+        const { blocks } = get();
+        const block = blocks.find(b => b._id === id);
+
+        // If block no longer exists in state, don't try to save
+        if (!block) {
+            return;
+        }
+
+        try {
+            set({ isSaving: true });
+            await axios.put(`${API_URL}/api/blocks/${id}`, {
+                content: block.content,
+                props: block.props,
+                type: block.type
+            }, { withCredentials: true });
+            set({ isSaving: false });
+        } catch (error) {
+            // If 404, the block might have been deleted on the server already
+            if (error.response?.status === 404) {
+                console.warn(`[Store] Block ${id} not found on server. Stopping save retries.`);
+                // Clean up any pending timers
+                if (saveTimers.has(id)) {
+                    clearTimeout(saveTimers.get(id));
+                    saveTimers.delete(id);
+                }
+            } else {
+                console.error('Failed to save block', error);
+                set({ isSaving: false, error: 'Failed to save changes' });
+            }
+        }
+    },
+
+    // Update a single block (optimistic + per-block debounce save)
     updateBlock: (id, content, props, type) => {
+        // Guard: Stop if block is being deleted
+        if (deletingIds.has(id)) return;
+
         const { blocks } = get();
         const index = blocks.findIndex(b => b._id === id);
         if (index === -1) return;
@@ -44,35 +78,33 @@ const useBlockStore = create((set, get) => ({
         updatedBlocks[index] = {
             ...updatedBlocks[index],
             content: content !== undefined ? content : updatedBlocks[index].content,
-            props: props || updatedBlocks[index].props,
-            type: type || updatedBlocks[index].type
+            ...(props !== undefined && { props }),
+            ...(type !== undefined && { type })
         };
 
-        set({ blocks: updatedBlocks, isSaving: true });
+        set({ blocks: updatedBlocks });
 
         // Emit socket update
         const { emitUpdateBlock } = useSocketStore.getState();
         emitUpdateBlock(updatedBlocks[index].pageId, id, updatedBlocks[index].content, updatedBlocks[index].type, updatedBlocks[index].props);
 
-        get().debouncedSaveBlock(id, updatedBlocks[index]);
-    },
-
-    debouncedSaveBlock: debounce(async (id, blockData) => {
-        try {
-            await axios.put(`${API_URL}/api/blocks/${id}`, {
-                content: blockData.content,
-                props: blockData.props,
-                type: blockData.type
-            }, { withCredentials: true });
-            set({ isSaving: false });
-        } catch (error) {
-            console.error('Failed to save block', error);
-            set({ isSaving: false, error: 'Failed to save changes' });
+        // Per-block debouncing
+        if (saveTimers.has(id)) {
+            clearTimeout(saveTimers.get(id));
         }
-    }, 1000),
+
+        const timer = setTimeout(() => {
+            get().saveBlock(id);
+            saveTimers.delete(id);
+        }, 1000);
+
+        saveTimers.set(id, timer);
+    },
 
     // Remote update (does NOT trigger save)
     updateBlockFromSocket: (id, content, props, type) => {
+        if (deletingIds.has(id)) return;
+
         const { blocks } = get();
         const index = blocks.findIndex(b => b._id === id);
         if (index === -1) return;
@@ -81,8 +113,8 @@ const useBlockStore = create((set, get) => ({
         updatedBlocks[index] = {
             ...updatedBlocks[index],
             content: content !== undefined ? content : updatedBlocks[index].content,
-            props: props || updatedBlocks[index].props,
-            type: type || updatedBlocks[index].type
+            ...(props !== undefined && { props }),
+            ...(type !== undefined && { type })
         };
 
         set({ blocks: updatedBlocks });
@@ -92,31 +124,20 @@ const useBlockStore = create((set, get) => ({
         const { blocks } = get();
         const index = blocks.findIndex(b => b._id === previousBlockId);
 
-        // Calculate order:
-        // This is naive. Ideally we use LexoRank or decent spacing. 
-        // MVP: Just huge gaps or re-normalize.
-        // Let's rely on finding the previous block and adding to the list locally, 
-        // then letting backend handle order or we handle order explicitly.
-        // Let's send `order` explicitly.
-
         let newOrder = 0;
         if (index !== -1) {
-            // We want to insert AFTER previousBlockId
             const prevOrder = blocks[index].order || 0;
             const nextOrder = blocks[index + 1]?.order;
             if (nextOrder) {
                 newOrder = (prevOrder + nextOrder) / 2;
             } else {
-                newOrder = prevOrder + 1024; // Arbitrary gap
+                newOrder = prevOrder + 1024;
             }
         } else {
-            // Start of list? or End if previousBlockId is null? assumed end if null
             const lastBlock = blocks[blocks.length - 1];
             newOrder = lastBlock ? (lastBlock.order || 0) + 1024 : 1024;
         }
 
-        // Optimistic add? No, we need DB ID for keys. 
-        // Let's wait for creation. It's fast usually.
         try {
             const response = await axios.post(`${API_URL}/api/blocks`, {
                 pageId,
@@ -127,7 +148,6 @@ const useBlockStore = create((set, get) => ({
 
             const newBlock = response.data;
 
-            // Insert into local state
             const newBlocks = [...blocks];
             if (index !== -1) {
                 newBlocks.splice(index + 1, 0, newBlock);
@@ -136,35 +156,35 @@ const useBlockStore = create((set, get) => ({
             }
 
             set({ blocks: newBlocks });
-            return newBlock; // Return so we can focus it
+            return newBlock;
         } catch (error) {
             console.error("Failed to add block", error);
         }
     },
 
     deleteBlock: async (id) => {
+        // Mark as deleting immediately to block any further updates/saves
+        deletingIds.add(id);
+
+        // Cancel any pending debounced save for THIS block
+        if (saveTimers.has(id)) {
+            clearTimeout(saveTimers.get(id));
+            saveTimers.delete(id);
+        }
+
         set(state => ({ blocks: state.blocks.filter(b => b._id !== id) }));
         try {
             await axios.delete(`${API_URL}/api/blocks/${id}`, { withCredentials: true });
         } catch (error) {
             console.error("Failed to delete block", error);
-            // Revert?
+        } finally {
+            // Optional: clean up deletingIds after some time to keep memory low
+            setTimeout(() => deletingIds.delete(id), 5000);
         }
     },
 
     reorderBlocks: async (newBlocks) => {
-        // Optimistic
         set({ blocks: newBlocks });
-
-        // Sync order to backend
-        // We should update ALL blocks that changed order.
-        // For MVP, maybe only update the moved one with new order calculation?
-        // `newBlocks` is the array in new order.
-        // Let's loop and update those whose index doesn't match 'order' implies?
-        // Actually, we need to assign new 'order' values to persisted blocks.
-        // Let's just update ALL order values for now (inefficient but works for small pages).
-        // Or better: update only if necessary.
-        // TODO: Implement proper reorder sync.
     }
 }));
 

@@ -30,6 +30,25 @@ const pageSchema = new mongoose.Schema({
     content: {
         type: Array, // For simple content updates if not using separate blocks model completely, but we are using blocks.
         default: [],
+    },
+    properties: {
+        tags: {
+            type: [String],
+            default: []
+        },
+        status: {
+            type: String,
+            enum: ['Not Started', 'In Progress', 'Complete', 'Archived'],
+            default: 'Not Started'
+        },
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        lastEditedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        }
     }
 }, {
     timestamps: true,

@@ -6,6 +6,8 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import useBlockStore from '@/store/useBlockStore';
 import SortableBlock from './SortableBlock';
 import CoverUpload from '@/components/common/CoverUpload';
+import PageProperties from '@/components/common/PageProperties';
+import PageTitleEditable from './PageTitleEditable';
 import usePageStore from '@/store/usePageStore';
 import useSocketStore from '@/store/useSocketStore';
 import useAuthStore from '@/store/useAuthStore';
@@ -14,16 +16,49 @@ import useAuthStore from '@/store/useAuthStore';
 const PageEditor = ({ pageId }) => {
     const { blocks, fetchBlocks, isLoading, reorderBlocks, addBlock, updateBlockFromSocket } = useBlockStore();
     const { joinPage, leavePage } = useSocketStore();
+    const { trackPageVisit } = usePageStore();
     const { user } = useAuthStore();
     const [activeId, setActiveId] = useState(null); // For drag overlay
     const [focusedBlockId, setFocusedBlockId] = useState(null); // To focus new blocks
+    const [page, setPage] = useState(null);
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8, // Require 8px movement before drag starts
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
     );
+
+    // Fetch page data
+    useEffect(() => {
+        const fetchPage = async () => {
+            if (!pageId) return;
+            try {
+                const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                const response = await fetch(`${API_URL}/api/pages/${pageId}`, {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setPage(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch page', error);
+            }
+        };
+        fetchPage();
+    }, [pageId]);
+
+    // Track page visit
+    useEffect(() => {
+        if (pageId) {
+            trackPageVisit(pageId);
+        }
+    }, [pageId, trackPageVisit]);
 
     useEffect(() => {
         if (pageId) fetchBlocks(pageId);
@@ -98,8 +133,8 @@ const PageEditor = ({ pageId }) => {
     // Let's rely on standard logic: newly mounted component at end or specific position?
     // SortableBlock passes `autoFocus` if ID matches?
 
-    const { pages, updatePageIcon } = usePageStore();
-    const currentPage = pages.find(p => p._id === pageId);
+    const { pages } = usePageStore();
+    const currentPage = pages.find(p => p._id === pageId) || page;
 
     if (isLoading) return <div className="p-10">Loading editor...</div>;
 
@@ -120,18 +155,21 @@ const PageEditor = ({ pageId }) => {
                         }}
                     />
 
-                    <div className="max-w-4xl mx-auto px-12 relative">
-                        {/* Icon */}
-                        <div className="absolute -top-10 left-12 h-20 w-20 text-6xl shadow-sm rounded-md bg-background border flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors group/icon">
-                            {currentPage.icon || "📄"}
-                            {/* Icon picker trigger */}
-                        </div>
+                    {/* Page Header - Icon + Title */}
+                    <div className="max-w-4xl mx-auto px-6 md:px-12 py-8">
+                        <div className="flex items-start gap-4">
+                            {/* Icon */}
+                            <div className="shrink-0 h-16 w-16 text-5xl rounded-md bg-background border shadow-sm flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors">
+                                {currentPage.icon || "📄"}
+                            </div>
 
-                        {/* Title */}
-                        <div className="mt-14 mb-4">
-                            <h1 className="text-4xl font-bold outline-none placeholder:text-muted-foreground/50 break-words" contentEditable suppressContentEditableWarning>
-                                {currentPage.title}
-                            </h1>
+                            {/* Title */}
+                            <div className="flex-1 min-w-0 pt-2">
+                                <PageTitleEditable
+                                    pageId={pageId}
+                                    initialTitle={currentPage.title || 'Untitled'}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -146,11 +184,11 @@ const PageEditor = ({ pageId }) => {
                     modifiers={[restrictToVerticalAxis]}
                 >
                     <SortableContext
-                        items={blocks.map(b => b._id)}
+                        items={blocks.filter(b => b._id).map(b => b._id)}
                         strategy={verticalListSortingStrategy}
                     >
                         <div className="space-y-1">
-                            {blocks.map((block) => (
+                            {blocks.filter(b => b._id).map((block) => (
                                 <SortableBlock
                                     key={block._id}
                                     block={block}

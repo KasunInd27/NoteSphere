@@ -55,6 +55,36 @@ const usePageStore = create((set, get) => ({
         }
     },
 
+    updatePageTitle: async (pageId, newTitle) => {
+        // Optimistic update
+        const oldPages = get().pages;
+        set(state => ({
+            pages: state.pages.map(p =>
+                p._id === pageId ? { ...p, title: newTitle } : p
+            )
+        }));
+
+        try {
+            const response = await axios.put(
+                `${API_URL}/api/pages/${pageId}`,
+                { title: newTitle },
+                { withCredentials: true }
+            );
+            // Update with server response
+            set(state => ({
+                pages: state.pages.map(p =>
+                    p._id === pageId ? response.data : p
+                )
+            }));
+            return response.data;
+        } catch (error) {
+            console.error('Failed to update page title', error);
+            // Revert on error
+            set({ pages: oldPages });
+            throw error;
+        }
+    },
+
     toggleExpand: (pageId, forceState) => {
         set(state => ({
             expanded: {
